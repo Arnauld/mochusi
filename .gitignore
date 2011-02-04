@@ -1,0 +1,9 @@
+/.DS_Store
+/_test
+/.eunit
+/docs
+/ebin/*.app
+*.beam
+*.swp
+erl_crash.dump
+TEST-*.xml

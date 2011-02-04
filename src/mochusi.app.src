@@ -1,0 +1,9 @@
+%% -*- erlang -*-
+{application, mochusi,
+ [{description, "mochusi"},
+  {vsn, "0.1"},
+  {modules, []},
+  {registered, []},
+  {mod, {'mochusi_app', []}},
+  {env, []},
+  {applications, [kernel, stdlib, crypto]}]}.
