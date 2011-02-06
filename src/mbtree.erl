@@ -8,20 +8,6 @@
 %
 %%
 
--record(kp, {ptr, key}).
-
--record(kp_node, {pairs}).
-
--record(kv, {key, values}).
-
--record(kv_node, {pairs}).
-
-%%
-%
-% 
-%
-%%
-
 new() -> {tree, nil}.
 
 %%
@@ -50,7 +36,7 @@ insert_1(nil, Key, Value) ->
 %
 % non-leaf cases
 %
-insert_1(KV=#kp_node{pairs=Pairs}, Key, Value) ->
+insert_1(#kp_node{pairs=Pairs}, Key, Value) ->
 	{KP, ReverseTraversed, Tail} = traverse_kp_pairs(Key, [], Pairs),
 	% io:format("~w [KP=~p, Key=~p, Pairs=~p] ~n", [?LINE, KP, Key, Pairs]),
 	NewPairs = case insert_1(KP#kp.ptr, Key, Value) of
@@ -79,12 +65,12 @@ insert_1(KV=#kp_node{pairs=Pairs}, Key, Value) ->
 %
 % leaf cases
 %
-insert_1(KV=#kv_node{pairs=Pairs}, Key, Value) ->
+insert_1(#kv_node{pairs=Pairs}, Key, Value) ->
 	Pairs1 = insert_pair(Key, Value, [], Pairs),
 	case is_overloaded(Pairs1) of 
 		{Len, true} ->
 			% leaf node must be splitted
-			{Left, Right=[H|T]} = lists:split(Len div 2 +1, Pairs1),
+			{Left, Right=[H|_]} = lists:split(Len div 2 +1, Pairs1),
 			{split, H#kv.key, #kv_node{pairs=Left}, #kv_node{pairs=Right}}
 			;
 		{_, false} -> 
@@ -118,7 +104,7 @@ create_kp_node(Pairs) ->
 	case is_overloaded(Pairs) of 
 		{Len, true} ->
 			% node must be splitted
-			{Left, Right=[H|T]} = lists:split(Len div 2, Pairs),
+			{Left, [H|T]} = lists:split(Len div 2, Pairs),
 			NewLeftPairs = Left ++ [last_bucket(H#kp.ptr)],
 			NewLeftNode  = #kp_node{pairs=NewLeftPairs},
 			NewRightNode = #kp_node{pairs=T},
@@ -131,11 +117,11 @@ create_kp_node(Pairs) ->
 %
 %
 %
-traverse_kp_pairs(Key, ReverseTraversed, [Last]) -> 
+traverse_kp_pairs(_, ReverseTraversed, [Last]) -> 
 	{Last, ReverseTraversed, []};
 traverse_kp_pairs(Key, ReverseTraversed, [KPH=#kp{key=KH}|T])  when KH < Key -> 
 	traverse_kp_pairs(Key, [KPH|ReverseTraversed], T);
-traverse_kp_pairs(Key, ReverseTraversed, [KPH|T])  -> %when KH >= Key -> 
+traverse_kp_pairs(_, ReverseTraversed, [KPH|T])  -> %when KH >= Key -> 
 	{KPH, ReverseTraversed, T}.
 
 %
@@ -167,7 +153,7 @@ traverse_in_order_1([H|T], Fun, Arg) ->
 	Arg1 = traverse_in_order_1(H, Fun, Arg),
 	traverse_in_order_1(T, Fun, Arg1);
 
-traverse_in_order_1([], Fun, Arg) -> Arg.
+traverse_in_order_1([], _, Arg) -> Arg.
 
 
 %%
@@ -190,7 +176,6 @@ nil_key_test() ->
 	ok.
 
 nil_tree_test() ->
-	Tree = new(),
 	?assertException(throw, {invalid_tree, _}, insert(nil, 11, "Bob")),
 	ok.
 
@@ -247,7 +232,7 @@ insert_empty_tree_test() ->
 	Tree0 = new(),
 	Tree1 = insert(Tree0, 17, "McCallum"),
 	% unpack to check value
-	{tree, KV=#kv_node{pairs=Values}} = Tree1,
+	{tree, #kv_node{pairs=Values}} = Tree1,
 	[#kv{key=K, values=[V]}] = Values,
 	?assertEqual(17, K),
 	?assertEqual("McCallum", V),
@@ -258,7 +243,7 @@ insert_root_leaf_ascending_2_items_test() ->
 	Tree1 = insert(Tree0, 17, "McCallum"),
 	Tree2 = insert(Tree1, 19, "Travis"),
 	% unpack to check value
-	{tree, KV=#kv_node{pairs=Values}} = Tree2,
+	{tree, #kv_node{pairs=Values}} = Tree2,
 	[#kv{key=K1, values=[V1]}, #kv{key=K2, values=[V2]}] = Values,
 	?assertEqual(17, K1),
 	?assertEqual("McCallum", V1),
@@ -272,7 +257,7 @@ insert_root_leaf_ascending_3_items_test() ->
 	Tree2 = insert(Tree1, 19, "Travis"),
 	Tree3 = insert(Tree2, 23, "Pacman"),
 	% unpack to check value
-	{tree, KV=#kv_node{pairs=Values}} = Tree3,
+	{tree, #kv_node{pairs=Values}} = Tree3,
 	[#kv{key=K1, values=[V1]}, #kv{key=K2, values=[V2]}, #kv{key=K3, values=[V3]}] = Values,
 	?assertEqual(17, K1),
 	?assertEqual("McCallum", V1),
@@ -289,7 +274,7 @@ insert_root_leaf_ascending_4_items_test() ->
 	Tree3 = insert(Tree2, 23, "Pacman"),
 	Tree4 = insert(Tree3, 29, "Vlad"),
 	% unpack to check value
-	{tree, KV=#kv_node{pairs=Values}} = Tree4,
+	{tree, #kv_node{pairs=Values}} = Tree4,
 	[#kv{key=K1, values=[V1]}, #kv{key=K2, values=[V2]}, #kv{key=K3, values=[V3]}, #kv{key=K4, values=[V4]}] = Values,
 	?assertEqual(17, K1),
 	?assertEqual("McCallum", V1),
@@ -306,7 +291,7 @@ insert_root_leaf_descending_test() ->
 	Tree1 = insert(Tree0, 19, "Travis"),
 	Tree2 = insert(Tree1, 17, "McCallum"),
 	% unpack to check value
-	{tree, KV=#kv_node{pairs=Values}} = Tree2,
+	{tree, #kv_node{pairs=Values}} = Tree2,
 	[#kv{key=K1, values=[V1]}, #kv{key=K2, values=[V2]}] = Values,
 	?assertEqual(17, K1),
 	?assertEqual("McCallum", V1),
@@ -321,7 +306,7 @@ insert_root_leaf_descending_4_items_test() ->
 	Tree3 = insert(Tree2, 19, "Travis"),
 	Tree4 = insert(Tree3, 17, "McCallum"),
 	% unpack to check value
-	{tree, KV=#kv_node{pairs=Values}} = Tree4,
+	{tree, #kv_node{pairs=Values}} = Tree4,
 	[#kv{key=K1, values=[V1]}, #kv{key=K2, values=[V2]}, #kv{key=K3, values=[V3]}, #kv{key=K4, values=[V4]}] = Values,
 	?assertEqual(17, K1),
 	?assertEqual("McCallum", V1),
@@ -331,13 +316,6 @@ insert_root_leaf_descending_4_items_test() ->
 	?assertEqual("Pacman", V3),
 	?assertEqual(29, K4),
 	?assertEqual("Vlad", V4),
-	ok.
-
-insert_root_leaf_filled_test() ->
-	Tree = sample_tree(),
-	% unpack to check value
-	{tree, KP=#kp_node{pairs=Values}} = Tree,
-	?assertEqual(23, 24),
 	ok.
 	
 sample_tree() ->
@@ -364,10 +342,26 @@ traverse_in_order_test () ->
 	Tree = sample_tree(),
 	Collected = traverse_in_order(Tree, 
 		fun(Key, Values, Acc) ->
+			[Value] = Values,
 			% ?debugFmt("~n ~p --> ~p ~n", [Key, Values]),
-			[Key|Acc]
+			[{Key, Value}|Acc]
 		end, []),
-	Expected = [57,53,51,49,47,43,41,39,37,31,29,23,19,17,11,7],
+	Expected = [{57, "Mazzere"},
+				{53, "Pendjab"},
+				{51, "Deux Ex Machina"},
+				{49, "Russel"},
+				{47, "Earp"},
+				{43, "Bugg"},
+				{41, "Naoko"},
+				{39, "Oslo"},
+				{37, "cyberneurs"},
+				{31, "Terry"},
+				{29, "Vlad"},
+				{23, "Pacman"},
+				{19, "Travis"},
+				{17, "McCallum"},
+				{11, "Thundercat"},
+				{7,  "Kirkwood"}],
 	?assertEqual(Expected, Collected),
 	ok.
 

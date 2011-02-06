@@ -1,8 +1,9 @@
-/.DS_Store
+.DS_Store
+deps/*
 /_test
 /.eunit
-/docs
-/ebin/*.app
+docs/*
+ebin/*.app
 *.beam
 *.swp
 erl_crash.dump
